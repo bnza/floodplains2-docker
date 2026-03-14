@@ -1,0 +1,90 @@
+services:
+  database:
+    build:
+      context: .
+      dockerfile: docker/database/Dockerfile
+      args:
+        POSTGRES_VERSION: ${POSTGRES_VERSION:-15}
+        POSTGIS_VERSION: ${POSTGIS_VERSION:-3.6}
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-archiraq}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-app}
+      - POSTGRES_USER=${POSTGRES_USER:-archiraq_admin}
+    volumes:
+      - pg_socket:/var/run/postgresql
+      - ./docker/database/initdb.d:/docker-entrypoint-initdb.d
+      - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-archiraq}", "-U", "${POSTGRES_USER:-archiraq_admin}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  php:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: app_php
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    depends_on:
+      database:
+        condition: service_healthy
+    volumes:
+      - php_socket:/var/run/php
+      - pg_socket:/var/run/postgresql
+      - ./repo:/srv/app
+    environment:
+      # - DATABASE_URL=postgresql://${POSTGRES_USER:-archiraq_admin}:${POSTGRES_PASSWORD:-app}@%%2Fvar%%2Frun%%2Fpostgresql/${POSTGRES_DB:-archiraq}?serverVersion=${POSTGRES_VERSION:-15}&charset=utf8
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-archiraq_admin}:${POSTGRES_PASSWORD:-app}@database/${POSTGRES_DB:-archiraq}?serverVersion=${POSTGRES_VERSION:-15}&charset=utf8
+
+  node:
+    profiles:
+      - tools
+    build:
+      context: .
+      dockerfile: docker/node/Dockerfile
+      args:
+        USER_UID: ${USER_UID:-1000}
+        USER_GID: ${USER_GID:-1000}
+    volumes:
+      - ./repo:/srv/app
+
+  geoserver:
+    build:
+      context: ./docker/geoserver
+      args:
+        GEOSERVER_VERSION: ${GEOSERVER_VERSION:-2.25.0}
+    volumes:
+      # Note: data/ is now baked into the image via COPY in Dockerfile
+      - ${CORONA_DATA_DIR}:/data/archiraq/corona
+      - ${SURVEY_DATA_DIR}:/data/archiraq/survey
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      - RUN_UNPRIVILEGED=true
+      - RUN_WITH_USER_UID=${USER_UID:-1000}
+      - RUN_WITH_USER_GID=${USER_GID:-1000}
+      - GEOSERVER_ADMIN_USER=${GEOSERVER_ADMIN_USER:-admin}
+      - GEOSERVER_ADMIN_PASSWORD=${GEOSERVER_ADMIN_PASSWORD:-geoserver}
+      - NGINX_PORT=${NGINX_PORT:-8000}
+      - GEOSERVER_DATA_DIR=/data/archiraq/geoserver/2.15
+      - GEOSERVER_REQUIRE_FILE=/data/archiraq/geoserver/2.15/global.xml
+
+  nginx:
+    image: nginx:stable-alpine
+    depends_on:
+      - php
+    ports:
+      - "${NGINX_PORT:-8080}:80"
+    volumes:
+      - ./repo:/srv/app
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+      - php_socket:/var/run/php
+
+volumes:
+  db_data:
+  php_socket:
+  pg_socket:

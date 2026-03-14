@@ -1,0 +1,16 @@
+# Ignore volatile runtime data inside the data directory
+data/logs/**
+!data/logs/*.xml
+data/temp/**
+data/tmp/**
+
+# Ignore all subdirectories in GWC (this catches the tile folders)
+# Since rsync doesn't sync gwc/ except config files, we ignore all but XML
+data/gwc/**
+!data/gwc/*.xml
+
+# Ignore ALL security files (synced from production, contains secrets and env-specific URLs)
+data/security/masterpw/default/passwd
+data/security/geoserver.jceks
+data/security/masterpw.digest
+security/usergroup/default/users.xml

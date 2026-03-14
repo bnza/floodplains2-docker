@@ -1,3 +1,8 @@
 repo/
 .idea/
 .junie/
+
+.env
+
+# Ignore entire GeoServer data (baked into image)
+docker/geoserver/data/
