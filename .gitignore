@@ -6,3 +6,7 @@ repo/
 
 # Ignore entire GeoServer data (baked into image)
 docker/geoserver/data/
+
+# Ignore all files in import/ except .gitkeep
+import/*
+!import/.gitkeep

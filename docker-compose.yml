@@ -32,6 +32,7 @@ services:
       database:
         condition: service_healthy
     volumes:
+      - ./import:/import
       - php_socket:/var/run/php
       - pg_socket:/var/run/postgresql
       - ./repo:/srv/app
