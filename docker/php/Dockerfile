@@ -18,7 +18,8 @@ RUN apk update && apk add --no-cache \
     libpng-dev \
     freetype-dev \
     libjpeg-turbo-dev \
-    postgresql-dev
+    postgresql-dev \
+    postgresql-client
 
 # php extensions installer: https://github.com/mlocati/docker-php-extension-installer
 COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/

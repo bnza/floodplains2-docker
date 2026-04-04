@@ -6,6 +6,12 @@ services:
       APP_ENV: dev
       XDEBUG_MODE: "${XDEBUG_MODE:-develop,debug}"
       XDEBUG_CONFIG: "client_host=${XDEBUG_CLIENT_HOST:-host.docker.internal} client_port=${XDEBUG_CLIENT_PORT:-9003}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-password}"
+      POSTGRES_USER: "${POSTGRES_USER:-archiraq_admin}"
+      POSTGRES_HOST: database
+      POSTGRES_PORT: 5432
+    volumes:
+      - ./docker/database/initdb.d:/srv/app/tests/fixtures/initdb.d:ro
     extra_hosts:
       - host.docker.internal:host-gateway
 
